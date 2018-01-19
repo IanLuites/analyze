@@ -40,7 +40,7 @@ defmodule Analyze.CLI do
   end
 
   def stop(results) do
-    send __MODULE__, {:stop, self()}
+    send(__MODULE__, {:stop, self()})
 
     results = Enum.reject(results, &(elem(&1, 0) == :ok))
 
@@ -48,7 +48,7 @@ defmodule Analyze.CLI do
       :stopped -> true
     end
 
-    IO.puts @ansi_cursor_show <> @ansi_clear_line
+    IO.puts(@ansi_cursor_show <> @ansi_clear_line)
 
     if results != [] do
       # answer =
@@ -65,9 +65,9 @@ defmodule Analyze.CLI do
     end
 
     if results == [] do
-      System.halt 0
+      System.halt(0)
     else
-      System.halt 1
+      System.halt(1)
     end
   end
 
@@ -76,21 +76,22 @@ defmodule Analyze.CLI do
     |> Enum.map(&print_errors/1)
     |> Enum.reject(&(&1 == ""))
     |> Enum.join("\r\n\r\n")
-    |> String.trim
-    |> IO.puts
+    |> String.trim()
+    |> IO.puts()
   end
 
   defp print_errors({:ok, _method}), do: :ok
+
   defp print_errors({:error, method, output}) do
     "\e[1m🚨  " <> method <> " 🚨 \e[0m\r\n" <> output
   end
 
   def passed(method) do
-    send __MODULE__, {:task_status, method, :passed}
+    send(__MODULE__, {:task_status, method, :passed})
   end
 
   def failed(method) do
-    send __MODULE__, {:task_status, method, :failed}
+    send(__MODULE__, {:task_status, method, :failed})
   end
 
   # GenServer
@@ -100,30 +101,29 @@ defmodule Analyze.CLI do
       labels
       |> Enum.map(fn {method, label} -> {method, label, :running} end)
 
-    state =
-      %{
-        tasks: tasks,
-        frame: 0,
-      }
+    state = %{
+      tasks: tasks,
+      frame: 0
+    }
 
     if interactive do
-      Process.send_after __MODULE__, :render, @ui_refresh
+      Process.send_after(__MODULE__, :render, @ui_refresh)
       {:ok, setup_screen(state)}
     else
-      IO.puts "Performing analysis:"
+      IO.puts("Performing analysis:")
       {:ok, state}
     end
   end
 
   def handle_info(:render, state) do
-    Process.send_after __MODULE__, :render, @ui_refresh
+    Process.send_after(__MODULE__, :render, @ui_refresh)
     {:noreply, render(state)}
   end
 
   def handle_info({:stop, pid}, state) do
     state = render(state)
 
-    send pid, :stopped
+    send(pid, :stopped)
 
     {:stop, :normal, state}
   end
@@ -142,36 +142,35 @@ defmodule Analyze.CLI do
 
   # Render
   def setup_screen(state) do
-    IO.write @ansi_cursor_hide
+    IO.write(@ansi_cursor_hide)
 
-    IO.puts "Performing analysis:"
+    IO.puts("Performing analysis:")
 
-    render state
+    render(state)
   end
 
   def render_task({_task, label, :running}, %{spinner: spinner}) do
-    IO.puts "  #{spinner} " <> label
+    IO.puts("  #{spinner} " <> label)
   end
 
   def render_task({_task, label, :failed}, %{}) do
-    IO.puts "  #{@ansi_failed} " <> label
+    IO.puts("  #{@ansi_failed} " <> label)
   end
 
   def render_task({_task, label, :passed}, %{}) do
-    IO.puts "  #{@ansi_passed} " <> label
+    IO.puts("  #{@ansi_passed} " <> label)
   end
 
   def render(state = %{tasks: tasks, frame: frame}) do
-    icons =
-      %{
-        spinner: animation_frame(@spinner, frame),
-      }
+    icons = %{
+      spinner: animation_frame(@spinner, frame)
+    }
 
-    if frame != 0, do: tasks |> Enum.count |> ansi_cursor_up()
+    if frame != 0, do: tasks |> Enum.count() |> ansi_cursor_up()
 
-    IO.write @ansi_cursor_reset
-    Enum.each tasks, &render_task(&1, icons)
-    IO.write @ansi_clear_line
+    IO.write(@ansi_cursor_reset)
+    Enum.each(tasks, &render_task(&1, icons))
+    IO.write(@ansi_clear_line)
 
     %{state | frame: frame + 1}
   end
@@ -179,6 +178,7 @@ defmodule Analyze.CLI do
   defp animation_frame(animation, _frame) when is_binary(animation) do
     animation
   end
+
   defp animation_frame(animation, frame) when is_list(animation) do
     frame = rem(frame, Enum.count(animation))
 
@@ -186,7 +186,7 @@ defmodule Analyze.CLI do
   end
 
   defp ansi_cursor_up(lines, reset \\ true) do
-    if reset, do: IO.write @ansi_cursor_reset
-    IO.write "\e[#{lines}A"
+    if reset, do: IO.write(@ansi_cursor_reset)
+    IO.write("\e[#{lines}A")
   end
 end

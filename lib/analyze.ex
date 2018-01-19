@@ -7,26 +7,27 @@ defmodule Analyze do
   alias Analyze.CLI
 
   @methods %{
+    "coverage" => {&Analyze.coverage/1, "Code Coverage", "Running code coverage...", []},
     "credo" => {&Analyze.credo/1, "Credo", "Checking code consistency...", ["--strict"]},
     "dialyzer" => {&Analyze.dialyzer/1, "Dialyzer", "Performing static analysis...", []},
-    "coverage" => {&Analyze.coverage/1, "Code Coverage", "Running code coverage...", []},
-    "unit" => {&Analyze.unit/1, "Unit Tests", "Running unit tests...", []},
+    "format" => {&Analyze.format/1, "Code Formatting", "Checking code formatting...", []},
     "inch" => {&Analyze.inch/1, "Documentation", "Checking documentation quality...", []},
+    "unit" => {&Analyze.unit/1, "Unit Tests", "Running unit tests...", []}
   }
 
-  @default_analysis ~w(credo dialyzer coverage)
+  @default_analysis ~w(credo dialyzer coverage format)
   @full_analysis @default_analysis ++ ~w(inch)
 
   @task_timeout 10 * 60 * 1000
 
   def generate_config do
-    execute "mix", ["credo", "gen.config"]
+    execute("mix", ["credo", "gen.config"])
   end
 
   def main(options \\ [])
 
   def main([]) do
-    analyze @default_analysis, []
+    analyze(@default_analysis, [])
   end
 
   def main(["full" | options]) do
@@ -51,23 +52,25 @@ defmodule Analyze do
   end
 
   defp analyze(methods, options) when is_list(methods) do
-    case "coverage" in methods and !"unit" in methods do
+    case "coverage" in methods and !("unit" in methods) do
       true -> ["unit" | methods]
       false -> methods
     end
-    |> Enum.map(&({&1, @methods |> Map.get(&1) |> elem(1)}))
-    |> CLI.start(!"--non-interactive" in options)
+    |> Enum.map(&{&1, @methods |> Map.get(&1) |> elem(1)})
+    |> CLI.start(!("--non-interactive" in options))
 
     case "--async-disabled" in options do
       true ->
         methods
         |> Enum.map(&analyze(&1, options))
+
       false ->
         methods
         |> Enum.map(fn method -> Task.async(fn -> analyze(method, options) end) end)
         |> Enum.map(&Task.await(&1, @task_timeout))
     end
-    |> CLI.stop
+    |> List.flatten()
+    |> CLI.stop()
   end
 
   defp analyze(method, options) do
@@ -100,18 +103,19 @@ defmodule Analyze do
     if report, do: BuildStatus.report(method, "INPROGRESS", label, description)
 
     case function.(filtered_options) do
-      {:ok, status, _output} ->
+      {:ok, status, _output, sub} ->
         if report, do: BuildStatus.report(method, "SUCCESSFUL", label, status)
 
         CLI.passed(method)
 
-        {:ok, label}
-      {:error, status, output} ->
+        [{:ok, label} | sub]
+
+      {:error, status, output, sub} ->
         if report, do: BuildStatus.report(method, "FAILED", label, status)
 
         CLI.failed(method)
 
-        {:error, label, output}
+        [{:error, label, output} | sub]
     end
   end
 
@@ -122,12 +126,12 @@ defmodule Analyze do
       output
       |> String.split("\n")
       |> Enum.take(-3)
-      |> List.first
+      |> List.first()
       |> String.replace(~r/\x1b\[[0-9;]*m/, "")
 
     case status do
-      0 -> {:ok, short, output}
-      _ -> {:error, short, output}
+      0 -> {:ok, short, output, []}
+      _ -> {:error, short, output, []}
     end
   end
 
@@ -139,8 +143,19 @@ defmodule Analyze do
       |> Regex.run(output)
 
     case status do
-      0 -> {:ok, "Passed (#{time})", output}
-      _ -> {:error, "Failed (#{time})", output}
+      0 -> {:ok, "Passed (#{time})", output, []}
+      _ -> {:error, "Failed (#{time})", output, []}
+    end
+  end
+
+  def format(_options) do
+    {output, status} = execute("mix", ["format", "--check-formatted"])
+
+    count = output |> String.split(~r/\r?\n/) |> Enum.count() |> Kernel.-(5)
+
+    case status do
+      0 -> {:ok, "All files are properly formatted.", "All files are properly formatted.", []}
+      _ -> {:error, "#{count} files need formatting.", output, []}
     end
   end
 
@@ -163,31 +178,36 @@ defmodule Analyze do
     {message, _, failure} = test_count(clean)
 
     # Report, because unit == coverage
-    if failure == 0 do
-      if report, do: BuildStatus.report("unit", "SUCCESSFUL", unit_label, message)
+    unit =
+      if failure == 0 do
+        if report, do: BuildStatus.report("unit", "SUCCESSFUL", unit_label, message)
 
-      CLI.passed("unit")
-    else
-      if report, do: BuildStatus.report("unit", "FAILED", unit_label, message)
+        CLI.passed("unit")
+        []
+      else
+        if report, do: BuildStatus.report("unit", "FAILED", unit_label, message)
 
-      CLI.failed("unit")
-    end
+        CLI.failed("unit")
+        [{:error, "unit", output}]
+      end
 
     percentage =
       ~r/\[TOTAL\]\ *([0-9\.]+)%/
       |> Regex.run(clean)
 
     case percentage do
-      nil -> {:error, "Could not run code coverage.", output}
+      nil ->
+        {:error, "Could not run code coverage.", output, unit}
+
       percentage ->
         percentage =
           percentage
-          |> List.last
-          |> String.to_float
+          |> List.last()
+          |> String.to_float()
 
         case percentage < 100 do
-          true -> {:error, "#{percentage}% code coverage.", output}
-          false -> {:ok, "#{percentage}% code coverage.", output}
+          true -> {:error, "#{percentage}% code coverage.", output, unit}
+          false -> {:ok, "#{percentage}% code coverage.", output, unit}
         end
     end
   end
@@ -199,8 +219,8 @@ defmodule Analyze do
     {message, _, _} = test_count(clean)
 
     case status do
-      0 -> {:ok, message, output}
-      _ -> {:error, message, output}
+      0 -> {:ok, message, output, []}
+      _ -> {:error, message, output, []}
     end
   end
 
@@ -216,6 +236,7 @@ defmodule Analyze do
           |> Regex.run(tests)
 
         {"#{tests} (#{time})", String.to_integer(total), String.to_integer(failed)}
+
       _ ->
         {"Unit tests failed", 0, 1}
     end
@@ -228,29 +249,32 @@ defmodule Analyze do
 
     look_at_count =
       case String.contains?(clean, "Nothing to suggest.") do
-        true -> 0
+        true ->
+          0
+
         false ->
           ~r/You might want to look at these files:(.*?)Grade distribution/s
           |> Regex.run(clean)
-          |> List.last
+          |> List.last()
           |> String.split("\n")
-          |> Enum.count
+          |> Enum.count()
           |> Kernel.-(4)
       end
 
     case look_at_count do
-      0 -> {:ok, "Well documented.", output}
-      _ -> {:error, "#{look_at_count} files to document.", output}
+      0 -> {:ok, "Well documented.", output, []}
+      _ -> {:error, "#{look_at_count} files to document.", output, []}
     end
   end
 
-  @spec execute(String.t, [String.t]) :: {String.t, integer}
+  @spec execute(String.t(), [String.t()]) :: {String.t(), integer}
   defp execute(command, options) do
-    case :os.type do
+    case :os.type() do
       {:unix, :darwin} ->
         commands = ["-q", "/dev/null", command] ++ options
 
         System.cmd("script", commands)
+
       {:unix, _} ->
         System.cmd(command, options, stderr_to_stdout: true)
     end

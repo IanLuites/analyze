@@ -6,12 +6,19 @@ defmodule Analyze.Mixfile do
       app: :analyze,
       description: "Mix task to analyze and report Elixir code.",
       # escript: [main_module: Analyze],
-      version: "0.0.7",
+      version: "0.0.9",
       elixir: "~> 1.4",
-      build_embedded: Mix.env == :prod,
-      start_permanent: Mix.env == :prod,
+      build_embedded: Mix.env() == :prod,
+      start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
 
       # Docs
       name: "Analyze",
@@ -19,8 +26,8 @@ defmodule Analyze.Mixfile do
       homepage_url: "https://github.com/IanLuites/analyze",
       docs: [
         main: "readme",
-        extras: ["README.md"],
-      ],
+        extras: ["README.md"]
+      ]
     ]
   end
 
@@ -30,11 +37,17 @@ defmodule Analyze.Mixfile do
       maintainers: ["Ian Luites"],
       licenses: ["MIT"],
       files: [
-        "lib/analyze", "lib/mix", "lib/analyze.ex", "mix.exs", "README*", "LICENSE*", # Elixir
+        # Elixir
+        "lib/analyze",
+        "lib/mix",
+        "lib/analyze.ex",
+        "mix.exs",
+        "README*",
+        "LICENSE*"
       ],
       links: %{
-        "GitHub" => "https://github.com/IanLuites/analyze",
-      },
+        "GitHub" => "https://github.com/IanLuites/analyze"
+      }
     ]
   end
 
@@ -44,14 +57,14 @@ defmodule Analyze.Mixfile do
 
   defp deps do
     [
-      {:hackney, "~> 1.9"},
+      {:hackney, "~> 1.10"},
 
       # Code Tools
-      {:credo, "~> 0.8"},
+      {:credo, "~> 0.8", runtime: false},
       {:dialyxir, "~> 0.5", runtime: false},
-      {:ex_doc, "~> 0.16"},
-      {:excoveralls, "~> 0.7"},
-      {:inch_ex, "~> 0.5"},
+      {:ex_doc, "~> 0.18"},
+      {:excoveralls, "~> 0.8"},
+      {:inch_ex, "~> 0.5"}
     ]
   end
 end
