@@ -5,6 +5,8 @@ defmodule Analyze.Checks.Documentation do
   def description, do: "Checking documentation quality..."
 
   def run(_options) do
+    Mix.Task.run("compile")
+
     app =
       ~r/app: *:(?<app>[a-z\_]+)/
       |> Regex.named_captures(File.read!("./mix.exs"))

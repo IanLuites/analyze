@@ -54,6 +54,8 @@ defmodule Analyze do
   end
 
   defp analyze(methods, options) when is_list(methods) do
+    Mix.Task.run("compile")
+
     case "coverage" in methods and !("unit" in methods) do
       true -> ["unit" | methods]
       false -> methods
