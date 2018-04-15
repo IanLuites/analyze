@@ -5,18 +5,20 @@ defmodule Analyze do
 
   alias Analyze.BuildStatus
   alias Analyze.CLI
+  alias Analyze.Checks.{Spec, Documentation}
 
   @methods %{
     "coverage" => {&Analyze.coverage/1, "Code Coverage", "Running code coverage...", []},
     "credo" => {&Analyze.credo/1, "Credo", "Checking code consistency...", ["--strict"]},
     "dialyzer" => {&Analyze.dialyzer/1, "Dialyzer", "Performing static analysis...", []},
+    "doc" => {&Documentation.run/1, Documentation.title(), Documentation.description(), []},
     "format" => {&Analyze.format/1, "Code Formatting", "Checking code formatting...", []},
-    "inch" => {&Analyze.inch/1, "Documentation", "Checking documentation quality...", []},
+    "spec" => {&Spec.run/1, Spec.title(), Spec.description(), []},
     "unit" => {&Analyze.unit/1, "Unit Tests", "Running unit tests...", []}
   }
 
-  @default_analysis ~w(credo dialyzer coverage format)
-  @full_analysis @default_analysis ++ ~w(inch)
+  @default_analysis ~w(credo dialyzer coverage format doc spec)
+  @full_analysis @default_analysis ++ ~w()
 
   @task_timeout 10 * 60 * 1000
 
@@ -224,46 +226,19 @@ defmodule Analyze do
     end
   end
 
-  defp test_count(output) do
-    tests_output =
-      ~r/(Finished in [0-9\.]+ seconds)\r?\n([0-9]+ tests?, [0-9]+ failures?)/
-      |> Regex.run(output)
+  def test_count(output) do
+    captures =
+      ~r/Finished in (?<time>[0-9\.])+ seconds\r?\n((?<doctests>[0-9]+) doctests, )?(?<tests>[0-9]+) tests?, (?<failures>[0-9]+) failures?/
+      |> Regex.named_captures(output)
 
-    case tests_output do
-      [_, time, tests] ->
-        [_, total, failed] =
-          ~r/([0-9]+) tests?, ([0-9]+) failures?/
-          |> Regex.run(tests)
-
-        {"#{tests} (#{time})", String.to_integer(total), String.to_integer(failed)}
+    case captures do
+      %{"failures" => failed, "tests" => tests, "time" => time} ->
+        {"#{tests} (#{time} seconds)",
+         String.to_integer(tests) + String.to_integer("0" <> captures["doctests"]),
+         String.to_integer(failed)}
 
       _ ->
         {"Unit tests failed", 0, 1}
-    end
-  end
-
-  def inch(options) do
-    {output, _status} = execute("mix", ["inch"] ++ options)
-
-    clean = output |> String.replace(~r/\x1b\[[0-9;]*m/, "")
-
-    look_at_count =
-      case String.contains?(clean, "Nothing to suggest.") do
-        true ->
-          0
-
-        false ->
-          ~r/You might want to look at these files:(.*?)Grade distribution/s
-          |> Regex.run(clean)
-          |> List.last()
-          |> String.split("\n")
-          |> Enum.count()
-          |> Kernel.-(4)
-      end
-
-    case look_at_count do
-      0 -> {:ok, "Well documented.", output, []}
-      _ -> {:error, "#{look_at_count} files to document.", output, []}
     end
   end
 
