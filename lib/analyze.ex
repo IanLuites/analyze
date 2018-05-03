@@ -176,7 +176,13 @@ defmodule Analyze do
     {_, unit_label, unit_description, _} = Map.get(@methods, "unit")
     if report, do: BuildStatus.report("unit", "INPROGRESS", unit_label, unit_description)
 
-    {output, _status} = execute("mix", ["test", "--cover"] ++ options)
+    {format, options} =
+      Enum.find_value(options, ["test", "--cover"], fn
+        "-format=" <> format -> {["coveralls.#{format}"], options -- ["-format=" <> format]}
+        _ -> {nil, options}
+      end)
+
+    {output, _status} = execute("mix", format ++ options)
 
     clean = output |> String.replace(~r/\x1b\[[0-9;]*m/, "")
     {message, _, failure} = test_count(clean)
