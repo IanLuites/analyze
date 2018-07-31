@@ -177,9 +177,9 @@ defmodule Analyze do
     if report, do: BuildStatus.report("unit", "INPROGRESS", unit_label, unit_description)
 
     {format, options} =
-      Enum.find_value(options, ["test", "--cover"], fn
+      Enum.find_value(options, {["test", "--cover"], options}, fn
         "-format=" <> format -> {["coveralls.#{format}"], options -- ["-format=" <> format]}
-        _ -> {nil, options}
+        _ -> nil
       end)
 
     {output, _status} = execute("mix", format ++ options)
