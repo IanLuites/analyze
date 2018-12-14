@@ -59,7 +59,7 @@ defmodule Analyze.BuildStatus do
                @options
              ) do
           {:ok, 200, _, auth_json} ->
-            auth = Poison.decode!(auth_json)
+            auth = Jason.decode!(auth_json)
 
             [{"Authorization", "Bearer " <> auth["access_token"]}]
 
