@@ -141,10 +141,7 @@ defmodule Analyze do
 
   def dialyzer(options) do
     {output, status} = execute("mix", ["dialyzer", "--halt-exit-status"] ++ options)
-
-    [_, time] =
-      ~r/done in ([0-9]+m[0-9\.]+s)/
-      |> Regex.run(output)
+    [_, time] = Regex.run(~r/done in ([0-9]+m[0-9\.]+s)/, output) || ["???", "???"]
 
     case status do
       0 -> {:ok, "Passed (#{time})", output, []}
