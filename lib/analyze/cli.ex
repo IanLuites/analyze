@@ -150,15 +150,15 @@ defmodule Analyze.CLI do
   end
 
   def render_task({_task, label, :running}, %{spinner: spinner}) do
-    IO.puts("  #{spinner} " <> label)
+    IO.puts("  #{spinner}" <> label <> " ")
   end
 
   def render_task({_task, label, :failed}, %{}) do
-    IO.puts("  #{@ansi_failed} " <> label)
+    IO.puts("  #{@ansi_failed} " <> label <> " ")
   end
 
   def render_task({_task, label, :passed}, %{}) do
-    IO.puts("  #{@ansi_passed} " <> label)
+    IO.puts("  #{@ansi_passed} " <> label <> " ")
   end
 
   def render(state = %{tasks: tasks, frame: frame}) do
