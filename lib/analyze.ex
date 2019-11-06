@@ -66,7 +66,8 @@ defmodule Analyze do
   end
 
   defp configure(["--status-refresh-token", token | rest]) do
-    Application.put_env(:analyze, :status_refresh_token, token)
+    [a, b] = String.split(token, ":", parts: 2)
+    Application.put_env(:analyze, :status_refresh_token, {a, b})
     configure(rest)
   end
 
