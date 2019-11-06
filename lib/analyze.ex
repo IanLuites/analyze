@@ -53,7 +53,32 @@ defmodule Analyze do
     methods -- filter
   end
 
+  defp configure([]), do: :ok
+
+  defp configure(["--build-url", url | rest]) do
+    Application.put_env(:analyze, :status_build_url, url)
+    configure(rest)
+  end
+
+  defp configure(["--status-auth", auth | rest]) do
+    Application.put_env(:analyze, :status_authorization, auth)
+    configure(rest)
+  end
+
+  defp configure(["--status-refresh-token", token | rest]) do
+    Application.put_env(:analyze, :status_refresh_token, token)
+    configure(rest)
+  end
+
+  defp configure(["--status-endpoint", endpoint | rest]) do
+    Application.put_env(:analyze, :status_endpoint, endpoint)
+    configure(rest)
+  end
+
+  defp configure([_ | rest]), do: configure(rest)
+
   defp analyze(methods, options) when is_list(methods) do
+    configure(options)
     Mix.Task.run("compile")
 
     case "coverage" in methods and !("unit" in methods) do
