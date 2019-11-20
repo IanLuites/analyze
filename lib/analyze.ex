@@ -75,6 +75,11 @@ defmodule Analyze do
     configure(rest)
   end
 
+  defp configure(["--timeout", timeout | rest]) do
+    Application.put_env(:analyze, :timeout, String.to_integer(timeout) * 1_000)
+    configure(rest)
+  end
+
   defp configure([_ | rest]), do: configure(rest)
 
   defp analyze(methods, options) when is_list(methods) do
@@ -88,6 +93,8 @@ defmodule Analyze do
     |> Enum.map(&{&1, @methods |> Map.get(&1) |> elem(1)})
     |> CLI.start(!("--non-interactive" in options))
 
+    task_timeout = Application.get_env(:analyze, :timeout, @task_timeout)
+
     case "--async-disabled" in options do
       true ->
         methods
@@ -95,8 +102,8 @@ defmodule Analyze do
 
       false ->
         methods
-        |> Enum.map(fn method -> Task.async(fn -> analyze(method, options) end) end)
-        |> Enum.map(&Task.await(&1, @task_timeout))
+        |> Enum.map(fn method -> {method, Task.async(fn -> analyze(method, options) end)} end)
+        |> Enum.map(fn {m, t} -> await(m, t, task_timeout) end)
     end
     |> List.flatten()
     |> CLI.stop()
@@ -107,6 +114,16 @@ defmodule Analyze do
       nil -> :ok
       data -> run_analysis(method, data, options)
     end
+  end
+
+  defp await(method, task, timeout) do
+    Task.await(task, timeout)
+  catch
+    :exit, _ ->
+      {_, method, _, _} = Map.get(@methods, method)
+
+      CLI.failed(method)
+      {:error, method, "Timed out after: #{timeout}ms"}
   end
 
   defp run_analysis(method, {function, label, description, default_args}, options) do
