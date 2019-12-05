@@ -65,7 +65,7 @@ defmodule Analyze.Mixfile do
       {:dialyxir, ">= 1.0.0-rc.7", only: [:dev], runtime: false, optional: true},
       {:ex_doc, ">= 0.20.2"},
       {:excoveralls, ">= 0.12.0"},
-      {:tidy, ">= 0.1.0"}
+      {:tidy, ">= 0.1.1"}
     ]
   end
 end
