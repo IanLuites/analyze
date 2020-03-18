@@ -61,11 +61,11 @@ defmodule Analyze.Mixfile do
       {:jason, "~> 1.1"},
 
       # Code Tools
-      {:credo, ">= 1.1.5", runtime: false},
-      {:dialyxir, ">= 1.0.0-rc.7", only: [:dev], runtime: false, optional: true},
-      {:ex_doc, ">= 0.20.2"},
-      {:excoveralls, ">= 0.12.0"},
-      {:tidy, ">= 0.1.1"}
+      {:credo, ">= 1.3.1", only: [:dev], runtime: false},
+      {:dialyxir, ">= 1.0.0", only: [:dev], runtime: false},
+      {:ex_doc, ">= 0.21.3"},
+      {:excoveralls, ">= 0.12.3"},
+      {:tidy, ">= 0.1.3", runtime: false}
     ]
   end
 end
