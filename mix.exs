@@ -61,8 +61,8 @@ defmodule Analyze.Mixfile do
       {:jason, "~> 1.1"},
 
       # Code Tools
-      {:credo, ">= 1.3.1", only: [:dev], runtime: false},
-      {:dialyxir, ">= 1.0.0", only: [:dev], runtime: false},
+      {:credo, ">= 1.3.1", runtime: false},
+      {:dialyxir, ">= 1.0.0", runtime: false},
       {:ex_doc, ">= 0.21.3"},
       {:excoveralls, ">= 0.12.3"},
       {:tidy, ">= 0.1.3", runtime: false}
