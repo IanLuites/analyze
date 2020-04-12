@@ -17,7 +17,7 @@ defmodule Analyze do
     "unit" => {&Analyze.unit/1, "Unit Tests", "Running unit tests...", []},
     "security" =>
       {&Analyze.security/1, "Security Checks", "Running security checks...",
-       ["--exit", "--private"]}
+       ["--exit", "--private", "--skip"]}
   }
 
   @default_analysis ~w(credo dialyzer coverage format doc spec security)
