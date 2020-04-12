@@ -9,7 +9,7 @@ by adding `analyze` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:analyze, "~> 0.1.9"}]
+  [{:analyze, "~> 0.1.12"}]
 end
 ```
 
