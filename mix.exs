@@ -6,7 +6,7 @@ defmodule Analyze.Mixfile do
       app: :analyze,
       description: "Mix task to analyze and report Elixir code.",
       # escript: [main_module: Analyze],
-      version: "0.1.11",
+      version: "0.1.12",
       elixir: "~> 1.7",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -65,6 +65,7 @@ defmodule Analyze.Mixfile do
       {:dialyxir, ">= 1.0.0", runtime: false},
       {:ex_doc, ">= 0.21.3"},
       {:excoveralls, ">= 0.12.3"},
+      {:sobelow, ">= 0.10.1", runtime: false},
       {:tidy, ">= 0.1.3", runtime: false}
     ]
   end

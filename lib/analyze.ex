@@ -14,13 +14,21 @@ defmodule Analyze do
     "doc" => {&Documentation.run/1, Documentation.title(), Documentation.description(), []},
     "format" => {&Analyze.format/1, "Code Formatting", "Checking code formatting...", []},
     "spec" => {&Spec.run/1, Spec.title(), Spec.description(), []},
-    "unit" => {&Analyze.unit/1, "Unit Tests", "Running unit tests...", []}
+    "unit" => {&Analyze.unit/1, "Unit Tests", "Running unit tests...", []},
+    "security" =>
+      {&Analyze.security/1, "Security Checks", "Running security checks...",
+       ["--exit", "--private"]}
   }
 
-  @default_analysis ~w(credo dialyzer coverage format doc spec)
+  @default_analysis ~w(credo dialyzer coverage format doc spec security)
   @full_analysis @default_analysis ++ ~w()
 
   @task_timeout 10 * 60 * 1000
+
+  defp phoenix?,
+    do:
+      :application.ensure_started(:phoenix) !=
+        {:error, {'no such file or directory', 'phoenix.app'}}
 
   def generate_config do
     execute("mix", ["credo", "gen.config"])
@@ -29,7 +37,9 @@ defmodule Analyze do
   def main(options \\ [])
 
   def main([]) do
-    analyze(@default_analysis, [])
+    default = if phoenix?(), do: @default_analysis, else: @default_analysis -- ["security"]
+
+    analyze(default, [])
   end
 
   def main(["full" | options]) do
@@ -39,7 +49,9 @@ defmodule Analyze do
   end
 
   def main(options) do
-    @default_analysis
+    default = if phoenix?(), do: @default_analysis, else: @default_analysis -- ["security"]
+
+    default
     |> get_methods(options)
     |> analyze(options)
   end
@@ -199,6 +211,18 @@ defmodule Analyze do
     case status do
       0 -> {:ok, "All files are properly formatted.", "All files are properly formatted.", []}
       _ -> {:error, "#{count} files need formatting.", output, []}
+    end
+  end
+
+  def security(options) do
+    {output, status} = execute("mix", ["sobelow"] ++ options)
+
+    short =
+      "#{~r/^File\: / |> Regex.scan(output) |> Enum.count()} potential security issues found."
+
+    case status do
+      0 -> {:ok, short, output, []}
+      _ -> {:error, short, output, []}
     end
   end
 
