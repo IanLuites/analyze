@@ -299,7 +299,7 @@ defmodule Analyze do
 
   def test_count(output) do
     captures =
-      ~r/Finished in (?<time>[0-9\.])+ seconds\r?\n((?<doctests>[0-9]+) doctests?, )?((?<tests>[0-9]+) tests?, )?(?<failures>[0-9]+) failures?/
+      ~r/Finished in (?<time>[0-9\.]+) seconds *(\([^\)]+\))?\r?\n((?<doctests>[0-9]+) doctests?, )?((?<tests>[0-9]+) tests?, )?(?<failures>[0-9]+) failures?/
       |> Regex.named_captures(output)
 
     case captures do

@@ -57,7 +57,7 @@ defmodule Analyze.Mixfile do
 
   defp deps do
     [
-      {:hackney, "~> 1.15"},
+      {:hackney, "~> 1.17"},
       {:jason, "~> 1.2"},
 
       # Code Tools
@@ -66,7 +66,7 @@ defmodule Analyze.Mixfile do
       {:ex_doc, ">= 0.23.0"},
       {:excoveralls, ">= 0.14.0"},
       {:sobelow, ">= 0.11.0", runtime: false},
-      {:tidy, ">= 0.1.3", runtime: false}
+      {:tidy, ">= 0.1.4", runtime: false}
     ]
   end
 end
